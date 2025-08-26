@@ -1,0 +1,16 @@
+{
+  "unknown": {
+    "versionFramework": "4.18.0",
+    "error": {
+      "message": "Failed to download and install template from https://github.com/serverless/examples/tree/v4/aws-node-http-api due to A folder named \"/home/matheuslino86/projetos/Ecommerce_Microservices/categoryService\" already exists.",
+      "stack": "Error: Failed to download and install template from https://github.com/serverless/examples/tree/v4/aws-node-http-api due to A folder named \"/home/matheuslino86/projetos/Ecommerce_Microservices/categoryService\" already exists.\n    at routeNew (file:///home/matheuslino86/.serverless/releases/4.18.0/package/dist/sf-core.js:812:21551)\n    at async commandOnboarding (file:///home/matheuslino86/.serverless/releases/4.18.0/package/dist/sf-core.js:812:20213)\n    at async _CoreRunner.run (file:///home/matheuslino86/.serverless/releases/4.18.0/package/dist/sf-core.js:1126:6301)\n    at async route (file:///home/matheuslino86/.serverless/releases/4.18.0/package/dist/sf-core.js:1603:2878)\n    at async Object.run (file:///home/matheuslino86/.serverless/releases/4.18.0/package/dist/sf-core.js:1604:3661)\n    at async run2 (file:///home/matheuslino86/.serverless/releases/4.18.0/package/dist/sf-core.js:1604:4815)"
+    },
+    "command": [],
+    "options": {},
+    "serviceProviderAwsCfStackId": null,
+    "serviceProviderAwsCfStackCreated": null,
+    "serviceProviderAwsCfStackUpdated": null,
+    "serviceProviderAwsCfStackStatus": null,
+    "serviceProviderAwsCfStackOutputs": null
+  }
+}
