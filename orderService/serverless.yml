@@ -6,6 +6,19 @@ service: orderService
 provider:
   name: aws
   runtime: nodejs22.x
+  environment:
+    DYNAMO_TABLE: Orders
+    SQS_QUEUE_URL: https://sqs.us-east-1.amazonaws.com/958313499473/OrderQueue
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - sqs:SendMessage
+        - sqs:ReceiveMessage
+        - sqs:DeleteMessage
+      Resource:
+        - arn:aws:sqs:us-east-1:958313499473:OrderQueue
+        - arn:aws:dynamodb:us-east-1:958313499473:table/Orders
 resources:
   Resources:
     OrdersTable:
@@ -19,10 +32,19 @@ resources:
         KeySchema:
           - AttributeName: id
             KeyType: HASH
+    OrderQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: OrderQueue
 functions:
-  hello:
-    handler: handler.hello
+  placeOrder:
+    handler: handlers/placeOrder.placeOrder
     events:
       - httpApi:
           path: /
-          method: get
+          method: post
+  processOrder:
+    handler: handlers/processOrder.processOrder
+    events:
+      - sqs:
+          arn: arn:aws:sqs:us-east-1:958313499473:OrderQueue

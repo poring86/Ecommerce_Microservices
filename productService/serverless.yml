@@ -8,17 +8,30 @@ provider:
   environment:
     BUCKET_NAME: product-images-matt-lino-12340
     DYNAMO_TABLE: Products
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+      Resource: arn:aws:s3:::product-images-famous-macaulay-12340/*
+    - Effect: Allow
+      Action:
+        - dynamoDb:PutItem
+        - dynamoDb:UpdateItem
+        - dynamoDb:Scan
+        - dynamoDb:DeleteItem
+      Resource: arn:aws:dynamodb:us-east-1:958313499473:table/Products
+    - Effect: Allow
+      Action:
+        - sns:Publish
+      Resource: arn:aws:sns:us-east-1:958313499473:ProductCleanupTopic
 
   httpApi:
     authorizers:
-      myCognitoAuth: #Custom name for Cognito Authorization(used in routes)
-        identitySource: $request.header.Authorization #Extract JWT token from Authorization
-        #header (used for validation)
-        issuerUrl: https://cognito-idp.us-east-1.amazonaws.com/us-east-1_y0NwyvEfn/
-        #Url of your Cognito user pool(Needed to  verify tokens).
+      myCognitoAuth:
+        identitySource: $request.header.Authorization
+        issuerUrl: https://cognito-idp.us-east-1.amazonaws.com/us-east-1_y0NwyvEfn
         audience:
           - 51s363ja1rdpaop0vtp1tgn202
-          #Cognito App client ID(ensures tokens come from the right app).
 
 resources:
   Resources:
@@ -68,9 +81,9 @@ functions:
     events:
       - s3:
           bucket: product-images-matt-lino-12340
-          event: s3:ObjectCreated:Put #Trigger event when a new object is uplaod
-          existing: true #ensures the function works with  an existing bucket
+          event: s3:ObjectCreated:Put
+          existing: true
   cleanupProducts:
     handler: handlers/cleanupProducts.cleanupProducts
     events:
-      - schedule: rate(2 minutes) #Runs every 2 minutes
+      - schedule: rate(2 minutes)
