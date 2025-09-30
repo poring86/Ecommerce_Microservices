@@ -4,7 +4,7 @@ const {DynamoDBClient, PutItemCommand} = require('@aws-sdk/client-dynamodb');
 
 //Import UUID generator to create unique order IDs
 
-const {v4: uuid} = require('uuid');
+const uuid = async () => (await import('uuid')).v4;
 
 //Import axios for making HTTP REQUESTS
 const axios = require('axios');
