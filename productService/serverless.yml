@@ -12,7 +12,7 @@ provider:
     - Effect: Allow
       Action:
         - s3:PutObject
-      Resource: arn:aws:s3:::product-images-famous-macaulay-12340/*
+      Resource: arn:aws:s3:::product-images-matt-lino-12340/*
     - Effect: Allow
       Action:
         - dynamoDb:PutItem

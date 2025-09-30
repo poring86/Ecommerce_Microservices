@@ -1,94 +1,109 @@
-//Import required AWS SDK modules to interact with DynamoDB
+// Import required AWS SDK modules to interact with DynamoDB
+const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
 
-const {DynamoDBClient, PutItemCommand} = require('@aws-sdk/client-dynamodb');
-
-//Import UUID generator to create unique order IDs
-
-const uuid = async () => (await import('uuid')).v4;
-
-//Import axios for making HTTP REQUESTS
+// Import axios for making HTTP requests
 const axios = require('axios');
-const {SQSClient, SendMessageCommand} = require('@aws-sdk/client-sqs');
-//Create new SQS client instance , specifying the AWS Region
-const sqsClient = new SQSClient({region:'us-east-1'});
 
-//Lambda function to handle order placement 
-exports.placeOrder = async (event) =>{
-    try {
-        //Parse the request body to extract order details
-        const {id, quantity, email} = JSON.parse(event.body);
+// UUID generator (corrigido!)
+const uuid = async () => {
+  const { v4 } = await import('uuid');
+  return v4();
+};
 
-        //Validate that all required fields are provided
-        if(!id || !quantity || !email){
-            return {
-                statusCode: 400, //Bad request
-                body: JSON.stringify({error: "fields are required"}), 
-            };
-        }
-        //Fetch the list of approved products from an external  Product Service API
-      const productResponse =  await axios.get(
-            `https://yfz8c07q9h.execute-api.us-east-1.amazonaws.com/approve-products`
-        );
-       //Extract approved products from the API response 
-       const approvedProducts = productResponse.data.products || [];
-       
-       //Find the product request in the order from the approved products list
-      const product = approvedProducts.find(p => p.id?.S ===id);
-      //p represent each product in the approvedProducts  array
-      //p.id is the product's id
+// Create new SQS client instance , specifying the AWS Region
+const sqsClient = new SQSClient({ region: 'us-east-1' });
 
-      //if the product is not found or not approved , return an error response
+// Lambda function to handle order placement
+exports.placeOrder = async (event) => {
+  console.log("🔔 Evento recebido:", JSON.stringify(event, null, 2));
 
-      if(!product){
-        return {
-            statusCode: 404, //Not found
-            body: JSON.stringify({error:'Product not found or not approved'}),
-        };
-      }
+  try {
+    // Parse the request body to extract order details
+    const { id, quantity, email } = JSON.parse(event.body || "{}");
+    console.log("📦 Dados do request:", { id, quantity, email });
 
-      //check if there is sufficient stock available
-      const availableStock = parseInt(product.quantity?.N || "0");//Convert stock to an integer
-      if(availableStock<quantity){
-        return {
-            statusCode: 400,//Bad request
-            body: JSON.stringify({error:"Insufficient stock available"}),
-        };
-      }
-
-      //Generate a unique order ID using the UUID
-
-      const orderId = uuid();
-      //create order payload
-      const orderPayload = {
-        id:orderId,
-        productId: id,
-        quantity,
-        email,
-        status:"pending",
-        createdAt: new Date().toISOString(),
-      };
-
-      //send order to SQS
-      await sqsClient.send(
-        new SendMessageCommand({
-          QueueUrl: process.env.SQS_QUEUE_URL,
-          MessageBody: JSON.stringify(orderPayload),
-        })
-      );
-
-      //return a success response with the order ID
-
+    // Validate that all required fields are provided
+    if (!id || !quantity || !email) {
+      console.error("❌ Campos obrigatórios faltando");
       return {
-        statusCode: 201, //created
-        body: JSON.stringify({message: "order placed succesfully", orderId}),
+        statusCode: 400, // Bad request
+        body: JSON.stringify({ error: "fields are required" }),
       };
-
-
-    } catch (error) {
-        return {
-        statusCode: 500, //Internal Server Error
-        body: JSON.stringify({error: error.message}),
-      };
- 
     }
-}
+
+    // Fetch the list of approved products from an external Product Service API
+    console.log("🌍 Buscando produtos aprovados...");
+    const productResponse = await axios.get(
+      `https://yfz8c07q9h.execute-api.us-east-1.amazonaws.com/approve-products`
+    );
+
+    // Extract approved products from the API response
+    const approvedProducts = productResponse.data.products || [];
+    console.log("📋 Produtos aprovados recebidos:", approvedProducts);
+
+    // Find the product request in the order from the approved products list
+    const product = approvedProducts.find((p) => p.id?.S === id);
+    console.log("🔍 Produto encontrado:", product);
+
+    if (!product) {
+      console.error("❌ Produto não encontrado ou não aprovado");
+      return {
+        statusCode: 404, // Not found
+        body: JSON.stringify({ error: "Product not found or not approved" }),
+      };
+    }
+
+    // Check if there is sufficient stock available
+    const availableStock = parseInt(product.quantity?.N || "0");
+    console.log("📦 Estoque disponível:", availableStock);
+
+    if (availableStock < quantity) {
+      console.error("❌ Estoque insuficiente");
+      return {
+        statusCode: 400, // Bad request
+        body: JSON.stringify({ error: "Insufficient stock available" }),
+      };
+    }
+
+    // Generate a unique order ID using the UUID
+    const orderId = await uuid();
+    console.log("🆔 OrderId gerado:", orderId);
+
+    // Create order payload
+    const orderPayload = {
+      id: orderId,
+      productId: id,
+      quantity,
+      email,
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    };
+    console.log("📦 OrderPayload pronto:", orderPayload);
+
+    // Send order to SQS
+    console.log("📨 Enviando mensagem para fila SQS:", process.env.SQS_QUEUE_URL);
+    await sqsClient.send(
+      new SendMessageCommand({
+        QueueUrl: process.env.SQS_QUEUE_URL,
+        MessageBody: JSON.stringify(orderPayload),
+      })
+    );
+
+    console.log("✅ Order enviada para SQS com sucesso");
+
+    // Return a success response with the order ID
+    return {
+      statusCode: 201, // created
+      body: JSON.stringify({
+        message: "Order placed successfully",
+        orderId,
+      }),
+    };
+  } catch (error) {
+    console.error("💥 Erro no placeOrder:", error);
+    return {
+      statusCode: 500, // Internal Server Error
+      body: JSON.stringify({ error: error.message }),
+    };
+  }
+};
