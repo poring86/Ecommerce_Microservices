@@ -1,6 +1,4 @@
-# "org" ensures this Service is used with the correct Serverless Framework Access Key.
 org: mattberserk
-# "service" is the name of this project. This will also be added to your AWS resource names.
 service: orderService
 
 provider:
@@ -9,6 +7,13 @@ provider:
   environment:
     DYNAMO_TABLE: Orders
     SQS_QUEUE_URL: https://sqs.us-east-1.amazonaws.com/958313499473/OrderQueue
+  httpApi:
+    authorizers:
+      myCognitoAuth:
+        identitySource: $request.header.Authorization
+        issuerUrl: https://cognito-idp.us-east-1.amazonaws.com/us-east-1_y0NwyvEfn
+        audience:
+          - 51s363ja1rdpaop0vtp1tgn202
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -43,6 +48,8 @@ functions:
       - httpApi:
           path: /
           method: post
+          authorizer:
+            name: myCognitoAuth
   processOrder:
     handler: handlers/processOrder.processOrder
     events:
